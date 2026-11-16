@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SAP CP Controlling – Lern-App</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SAP Lernen">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--muted:#5d6675;--line:#dde1e7;--acc:#1f5fbf;--ok:#1e8a4c;--bad:#c0392b;--warn:#b7791f}
 @media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2128;--ink:#e8ebf0;--muted:#9aa3b2;--line:#2e343e;--acc:#6ea2ff;--ok:#4cc483;--bad:#ff7a6b;--warn:#f0b75a}}
@@ -182,6 +187,7 @@ function renderStats(){
  $('#rs').onclick=()=>$('#rsq').classList.remove('hide');
  $('#rsy').onclick=()=>{S={q:{},c:{},exams:[]};save();renderStats();};}
 show('start');
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 </script>
 </body>
 </html>
