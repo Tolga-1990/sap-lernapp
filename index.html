@@ -90,8 +90,12 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 const $=s=>document.querySelector(s);
 const app=$('#app');
 let view='start',timerId=null;
-document.querySelectorAll('nav button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.querySelectorAll('nav button[data-v]').forEach(b=>b.onclick=()=>{fromSearch=false;show(b.dataset.v);});
 document.getElementById('navsk').onclick=()=>openPage(PV.n||1);
+let fromSearch=false;
+function backBtn(){return fromSearch?'<button class="btn sec" style="margin-bottom:10px" onclick="fromSearch=false;show(\'search\')">← Zurück zur Suche</button>':'';}
+function openQ(id){const x=DATA.questions.find(q=>q.id===id);if(!x)return;qf.part='alle';qf.mode='gewichtet';cur=x;fromSearch=true;show('quiz');window.scrollTo(0,0);}
+function openC(code){const x=CODES.find(c=>c.c===code);if(!x)return;cf.bereich='alle';cf.fs=false;cf.dir='code';cc=x;fromSearch=true;show('cards');window.scrollTo(0,0);}
 function show(v){view=v;if(timerId&&v!=='exam'){/* Prüfung läuft weiter im Hintergrund */}
  document.querySelectorAll('nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  ({start:renderStart,quiz:renderQuiz,cards:renderCards,exam:renderExam,search:renderSearch,stats:renderStats})[v]();}
@@ -133,7 +137,7 @@ function chosen(){return [...document.querySelectorAll('.opt input')].filter(e=>
 function correctSel(x,sel){const r=x.o.map((o,i)=>o.r?i:-1).filter(i=>i>=0);return sel.length===r.length&&r.every(i=>sel.includes(i));}
 function wireSel(){document.querySelectorAll('.opt input').forEach(e=>e.onchange=()=>document.querySelectorAll('.opt').forEach(l=>l.classList.toggle('sel',l.querySelector('input').checked)));}
 function nextQ(pool){const x=cur;x._order=null;
- $('#qbox').innerHTML=`<div class="card"><span class="tag">${x.id}</span><span class="tag">${DATA.parts[x.p]}</span>${smTag(x)}
+ $('#qbox').innerHTML=backBtn()+`<div class="card"><span class="tag">${x.id}</span><span class="tag">${DATA.parts[x.p]}</span>${smTag(x)}
  <div class="q">${x.q}</div>${optsHtml(x,'q')}
  <div class="row" id="b1"><button class="btn" id="chk">Prüfen</button></div>
  <div id="fb" class="hide"><div class="res" id="res"></div><div class="a"><b>Musterantwort:</b> ${pageLinks(esc(x.a))}</div>
@@ -160,7 +164,7 @@ function renderCards(){
  const x=cc,front=cf.dir==='code'?`<div class="big">${x.c}</div>`:`<div class="q">${x.f}</div>`;
  const back=cf.dir==='code'?`<div>${x.f}</div>`:`<div class="big">${x.c}</div>`;
  const fs=x.fs===true?'<span class="tag fs">Fallstudie</span>':x.fs==='offen'?'<span class="tag">Fallstudie: offen</span>':'';
- $('#cbox').innerHTML=`<div class="card"><span class="tag">${x.b}</span>${fs}${front}
+ $('#cbox').innerHTML=backBtn()+`<div class="card"><span class="tag">${x.b}</span>${fs}${front}
  <div id="back" class="a hide">${back}<div class="muted" style="margin-top:6px">${x.s==='allgemein'?'SAP-Standard, nicht im Skript (im Kurs prüfen)':'Skript '+pageLinks(esc(x.s))}${x.app?' · Fiori-App: '+x.app:''}</div></div>
  <div class="row" id="c1"><button class="btn" id="flip">Umdrehen</button></div>
  <div class="row hide" id="c2"><button class="btn ok" id="ok">Gewusst</button><button class="btn bad" id="no">Nicht gewusst</button></div></div>`;
@@ -256,10 +260,11 @@ function runSearch(){
  if(pages)sp=pages.map((p,i)=>({n:i+1,h:hits(p,ts),s:score(p,ts)})).filter(r=>r.h>=nd).sort((a,b)=>b.s-a.s);
  const btn=n=>SK.pdf?` <button class="btn sec" style="padding:3px 10px;font-size:13px" onclick="openPage(${n})">Seite ansehen</button>`:'';
  let h=`<div class="muted" style="margin:0 0 8px">Gesucht nach: ${ts.map(esc).join(', ')}${ts.length>2?` (mindestens ${nd} davon müssen vorkommen)`:''}</div>`;
+ const ob=(fn,arg,label)=>` <button class="btn" style="padding:3px 10px;font-size:13px" onclick="${fn}('${String(arg).replace(/'/g,"\\'")}')">${label}</button>`;
+ h+=`<div class="card"><b>Fragen (${qs.length})</b>`+(qs.length?qs.slice(0,30).map(r=>`<div class="hit"><span class="tag">${r.x.id}</span>${smTag(r.x)}<b>${hl(r.x.q,ts)}</b>${ob('openQ',r.x.id,'Frage öffnen')}<br>${pageLinks(hl(r.x.a,ts))}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ h+=`<div class="card"><b>Karteikarten (${cs.length})</b>`+(cs.length?cs.slice(0,30).map(r=>`<div class="hit"><b>${hl(r.x.c,ts)}</b>: ${hl(r.x.f,ts)} <span class="muted">(${r.x.s==='allgemein'?'nicht im Skript':'Skript '+pageLinks(esc(r.x.s))})</span>${ob('openC',r.x.c,'Karte öffnen')}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
  if(pages)h+=`<div class="card"><b>Skript: ${sp.length} Seite(n)</b>`+(sp.length?sp.slice(0,30).map(r=>`<div class="hit"><b>S. ${r.n}</b>${btn(r.n)}<br>${hl(snippet(pages[r.n-1],ts),ts)}</div>`).join('')+(sp.length>30?'<div class="muted">… weitere Seiten: '+sp.slice(30).map(r=>r.n).sort((a,b)=>a-b).join(', ')+'</div>':''):'<div class="muted">kein Treffer</div>')+`</div>`;
  h+=`<div class="card"><b>Skript-Inhaltsverzeichnis (${tc.length})</b>`+(tc.length?tc.slice(0,20).map(r=>`<div class="hit">Kap. ${esc(r.x[0])} ${hl(r.x[1],ts)} · <b>S. ${esc(r.x[2])}</b>${btn(+r.x[2])}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
- h+=`<div class="card"><b>Fragen (${qs.length})</b>`+(qs.length?qs.slice(0,30).map(r=>`<div class="hit"><span class="tag">${r.x.id}</span>${smTag(r.x)}<b>${hl(r.x.q,ts)}</b><br>${pageLinks(hl(r.x.a,ts))}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
- h+=`<div class="card"><b>Karteikarten (${cs.length})</b>`+(cs.length?cs.slice(0,30).map(r=>`<div class="hit"><b>${hl(r.x.c,ts)}</b>: ${hl(r.x.f,ts)} <span class="muted">(${r.x.s==='allgemein'?'nicht im Skript':'Skript '+pageLinks(esc(r.x.s))})</span></div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
  if(!pages)h+=`<div class="card muted">Tipp: Lade das Skript-PDF oben, dann durchsucht die App auch alle Skript-Seiten.</div>`;
  box.innerHTML=h;}
 // Seitenansicht
