@@ -27,6 +27,12 @@ main{max-width:760px;margin:0 auto;padding:16px}
 .tag.sm{border-color:#1f5fbf;background:#1f5fbf;color:#fff}
 mark{background:#ffe08a;color:#000;border-radius:3px;padding:0 2px}
 .hit{border-top:1px solid var(--line);padding:8px 0;font-size:14px}
+#pv{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column}
+.pvbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:10px;border-bottom:1px solid var(--line);background:var(--card)}
+.pvbar .btn{padding:8px 12px}
+#pvc{flex:1;overflow:auto;text-align:center;padding:8px}
+#pvcv{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+a.pl{color:var(--acc);font-weight:600}
 input[type=search]{width:100%;font-size:16px;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .q{font-size:18px;font-weight:600;margin:10px 0}
 .a{border-top:1px dashed var(--line);margin-top:12px;padding-top:12px;font-size:16px}
@@ -62,6 +68,7 @@ td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
     <button data-v="cards">Karteikarten</button>
     <button data-v="exam">Prüfungssimulation</button>
     <button data-v="search">Suche</button>
+    <button id="navsk">Skript</button>
     <button data-v="stats">Fortschritt</button>
   </nav>
 </header>
@@ -83,9 +90,10 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 const $=s=>document.querySelector(s);
 const app=$('#app');
 let view='start',timerId=null;
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.querySelectorAll('nav button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.getElementById('navsk').onclick=()=>openPage(PV.n||1);
 function show(v){view=v;if(timerId&&v!=='exam'){/* Prüfung läuft weiter im Hintergrund */}
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+ document.querySelectorAll('nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  ({start:renderStart,quiz:renderQuiz,cards:renderCards,exam:renderExam,search:renderSearch,stats:renderStats})[v]();}
 function counts(store,ids){const c=[0,0,0,0];ids.forEach(id=>c[box(store,id)]++);return c;}
 // ---- Start ----
@@ -95,7 +103,7 @@ function renderStart(){
  <ol><li><b>Quiz:</b> Multiple Choice wie in der Prüfung. Manche Fragen haben eine richtige Antwort, manche mehrere; die App sagt dir jeweils, wie viele. Nach „Prüfen“ siehst du die Lösung und die Musterantwort mit Skript-Kapitel. Falsche Fragen kommen öfter wieder.</li>
  <li><b>Karteikarten:</b> Transaktionscode (Kurzbefehl) oder Tastaturkürzel sehen und sagen, was er macht, oder umgekehrt. Unter „Bereich“ findest du „Tastaturkürzel“ separat.</li>
  <li><b>Prüfungssimulation:</b> 40 zufällige Multiple-Choice-Fragen in 60 Minuten, automatisch ausgewertet. Ergebnis erst am Ende, wie in der Prüfung. Ziel: mindestens 80 %.</li>
- <li><b>Suche:</b> Stichworte eintippen, z. B. «Mussfeld Kostenstelle». Die App durchsucht Fragen, Karteikarten, das Inhaltsverzeichnis des Skripts und, wenn du es einmal geladen hast, den ganzen Skript-Text mit Seitenzahl.</li>
+ <li><b>Suche:</b> Stichworte oder eine ganze Frage eintippen. Die App durchsucht Fragen, Karteikarten, das Inhaltsverzeichnis und, wenn du das Skript einmal geladen hast, alle Skript-Seiten (auch den Text in Bildern). Mit «Seite ansehen» oder dem Reiter <b>Skript</b> siehst du die Originalseite. Seitenzahlen in den Musterantworten («S. 84») sind anklickbar.</li>
  <li><b>Smiley 🙂:</b> Fragen mit dem blauen Vermerk «laut Trainer prüfungsrelevant» gehören zu Folien, die der Trainer mit einem blauen Smiley markiert hat. Im Quiz kannst du nur diese Fragen üben.</li>
  <li><b>Fortschritt:</b> wird nur in diesem Browser gespeichert (nicht im Internet).</li></ol>
  <p class="muted">${DATA.questions.length} Fragen: Teile A–F aus deinem Katalog „Prüfungsfragen mit Musterantworten“, abgeglichen mit dem Skript am 16.11.2026 (Kapitel in Klammern); Teile K und L aus dem Kurs vom 19.11. (Folien und Mitschnitt des Trainers) und der Fallstudie im Skript (Seiten in Klammern). Wo Folie und Skript sich widersprechen, gilt das Skript. Es sind keine echten Prüfungsfragen. Die falschen Antwortmöglichkeiten sind typische Verwechslungen, selbst formuliert. Die echte Prüfung enthält zusätzlich Bildschirmsimulationen; diese App trainiert das Wissen dahinter.</p></div>
@@ -128,7 +136,7 @@ function nextQ(pool){const x=cur;x._order=null;
  $('#qbox').innerHTML=`<div class="card"><span class="tag">${x.id}</span><span class="tag">${DATA.parts[x.p]}</span>${smTag(x)}
  <div class="q">${x.q}</div>${optsHtml(x,'q')}
  <div class="row" id="b1"><button class="btn" id="chk">Prüfen</button></div>
- <div id="fb" class="hide"><div class="res" id="res"></div><div class="a"><b>Musterantwort:</b> ${x.a}</div>
+ <div id="fb" class="hide"><div class="res" id="res"></div><div class="a"><b>Musterantwort:</b> ${pageLinks(esc(x.a))}</div>
  <div class="row"><button class="btn" id="nx">Nächste Frage</button></div></div></div>`;
  wireSel();
  $('#chk').onclick=()=>{const sel=chosen();if(!sel.length)return;const ok=correctSel(x,sel);
@@ -153,7 +161,7 @@ function renderCards(){
  const back=cf.dir==='code'?`<div>${x.f}</div>`:`<div class="big">${x.c}</div>`;
  const fs=x.fs===true?'<span class="tag fs">Fallstudie</span>':x.fs==='offen'?'<span class="tag">Fallstudie: offen</span>':'';
  $('#cbox').innerHTML=`<div class="card"><span class="tag">${x.b}</span>${fs}${front}
- <div id="back" class="a hide">${back}<div class="muted" style="margin-top:6px">${x.s==='allgemein'?'SAP-Standard, nicht im Skript (im Kurs prüfen)':'Skript '+x.s}${x.app?' · Fiori-App: '+x.app:''}</div></div>
+ <div id="back" class="a hide">${back}<div class="muted" style="margin-top:6px">${x.s==='allgemein'?'SAP-Standard, nicht im Skript (im Kurs prüfen)':'Skript '+pageLinks(esc(x.s))}${x.app?' · Fiori-App: '+x.app:''}</div></div>
  <div class="row" id="c1"><button class="btn" id="flip">Umdrehen</button></div>
  <div class="row hide" id="c2"><button class="btn ok" id="ok">Gewusst</button><button class="btn bad" id="no">Nicht gewusst</button></div></div>`;
  $('#flip').onclick=()=>{$('#back').classList.remove('hide');$('#c1').classList.add('hide');$('#c2').classList.remove('hide');};
@@ -170,7 +178,7 @@ function renderExam(){
   const verdict=p>=80?'Auszeichnung erreicht':p>=60?'bestanden, aber unter 80 %':'nicht bestanden';
   const wrong=E.qs.map((x,i)=>({x,a:E.ans[i]})).filter(r=>!r.a||!r.a.ok);
   app.innerHTML=`<div class="card"><b>Ergebnis</b><div class="big">${p} %</div><div>${ok} von 40 richtig · ${verdict}${E.timeout?' · Zeit abgelaufen':''}</div></div>`+
-  (wrong.length?`<div class="card"><b>Falsch oder nicht beantwortet (${wrong.length})</b>`+wrong.map(r=>`<div class="a"><span class="tag">${r.x.id}</span> <b>${r.x.q}</b><br>Richtig: ${r.x.o.filter(o=>o.r).map(o=>o.t).join(' · ')}<div class="muted">Musterantwort: ${r.x.a}</div></div>`).join('')+`</div>`:'')+
+  (wrong.length?`<div class="card"><b>Falsch oder nicht beantwortet (${wrong.length})</b>`+wrong.map(r=>`<div class="a"><span class="tag">${r.x.id}</span> <b>${r.x.q}</b><br>Richtig: ${r.x.o.filter(o=>o.r).map(o=>o.t).join(' · ')}<div class="muted">Musterantwort: ${pageLinks(esc(r.x.a))}</div></div>`).join('')+`</div>`:'')+
   `<div class="card"><div class="row" style="margin-top:0"><button class="btn" id="again">Neue Simulation</button></div></div>`;
   $('#again').onclick=()=>{E=null;renderExam();};return;}
  const x=E.qs[E.i];
@@ -184,42 +192,96 @@ function finish(timeout){clearInterval(timerId);timerId=null;E.done=true;E.timeo
 function tick(){clearInterval(timerId);timerId=setInterval(()=>{if(!E||E.done)return;if(Date.now()>=E.end){finish(true);}else updTimer();},1000);}
 function updTimer(){const el=$('#tm');if(!el||!E)return;const s=Math.max(0,Math.round((E.end-Date.now())/1000));el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} Min.`;}
 
-// ---- Suche ----
+// ---- Suche und Skript-Ansicht ----
 const TOC=[["1", "Einleitung", "9"], ["2", "Fallbeispiel", "11"], ["3", "Merkmale von SAP S/4HANA", "31"], ["4", "Rechnungswesen", "33"], ["4.1", "Externes vs. internes Rechnungswesen", "33"], ["4.2", "Finanzwesen", "34"], ["4.3", "Controlling", "34"], ["4.4", "Rechnungswesen mit SAP S/4HANA", "36"], ["5", "SAP Fiori", "39"], ["5.1", "Merkmale", "39"], ["5.2", "SAP Fiori Launchpad starten", "40"], ["5.3", "Auf dem SAP Fiori Launchpad anmelden", "40"], ["6", "Organisationseinheiten", "41"], ["6.1", "Mandant", "41"], ["6.2", "Buchungskreis", "41"], ["6.3", "Kostenrechnungskreis", "41"], ["6.4", "Werk", "42"], ["6.5", "Einkaufsorganisation / Einkäufergruppe", "42"], ["6.6", "Organisationseinheiten biz:ADES Enterprise", "42"], ["7", "Stammdaten", "43"], ["7.1", "Sachkonten und Kostenarten", "43"], ["7.1.1", "Primäre Kostenarten", "43"], ["7.1.2", "Sekundäre Kostenarten", "44"], ["7.1.3", "Sachkonto mit Kostenart anlegen", "44"], ["7.1.4", "Fiori App „Sachkontenstammdaten verwalten“", "51"], ["7.2", "Kostenstellen und Kostenstellengruppen", "62"], ["7.2.1", "Allgemeines", "62"], ["7.2.2", "Kostenstellengruppe anlegen", "64"], ["7.2.3", "Kostenstellengruppe ändern", "70"], ["7.2.4", "Kostenstellengruppe anzeigen", "72"], ["7.2.5", "Fiori App „Kostenstellengruppen verwalten“", "74"], ["7.2.6", "Kostenstelle anlegen", "81"], ["7.2.7", "Kostenstelle ändern", "86"], ["7.2.8", "Kostenstelle anzeigen", "88"], ["7.2.9", "Kostenstelle löschen", "90"], ["7.2.10", "Fiori App „Kostenstellen verwalten“", "93"], ["7.3", "Die Kostenstellen-Standardhierarchie", "102"], ["7.3.1", "Kostenstellen-Standardhierarchie anzeigen", "103"], ["7.3.2", "Kostenstellen-Standardhierarchie ändern", "105"], ["7.3.3", "Fiori App „Kostenstellengruppen verwalten“", "112"], ["7.4", "Statistische Kennzahlen", "114"], ["7.4.1", "Allgemeines", "114"], ["7.4.2", "Statistische Kennzahl anlegen", "117"], ["7.4.3", "Statistische Kennzahl ändern", "120"], ["7.4.4", "Statistische Kennzahl anzeigen", "122"], ["7.4.5", "Fiori App „Statistische Kennzahlen verwalten“", "124"], ["7.4.6", "Erfassen der statistischen Kennzahl auf den Kostenstellen", "131"], ["7.4.7", "Fiori App „Statistische Kennzahlwerte verwalten“", "135"], ["7.5", "Lieferantenstammdaten", "140"], ["7.5.1", "Geschäftspartner / Business Partner", "141"], ["7.5.2", "Transaktion BP „Geschäftspartner bearbeiten“", "142"], ["7.5.3", "Fiori App „Lieferantenstammdaten verwalten“", "156"], ["8", "Vorgangsbezogene Buchungen", "173"], ["8.1", "Allgemeines", "173"], ["8.2", "Sachkontenbeleg mit Primärkosten erfassen", "174"], ["8.3", "Fiori App „Hauptbuchbelege buchen“", "181"], ["8.4", "Eingangsrechnung mit Primärkosten erfassen", "187"], ["8.5", "Beleg anzeigen", "196"], ["8.6", "Beschaffung von Verbrauchsmaterialien", "200"], ["8.6.1", "Beschaffungsprozess / Einkauf", "200"], ["8.6.2", "Bereichsübergreifende Funktionen in Einkaufsbelegen", "201"], ["8.6.3", "Bestellung anlegen", "209"], ["8.6.4", "Bestellung ändern", "217"], ["8.6.5", "Bestellung anzeigen", "218"], ["8.6.6", "Bestellobligo anzeigen", "219"], ["8.6.7", "Fiori App „Bestellungen verwalten“", "222"], ["8.6.8", "Wareneingang zur Bestellung buchen", "232"], ["8.6.9", "Fiori App „Wareneingang zu Einkaufsbeleg buchen“", "237"], ["8.6.10", "Materialbeleg anzeigen", "239"], ["8.6.11", "Eingangsrechnung hinzufügen", "242"], ["8.6.12", "Fiori App „Lieferantenrechnung anlegen“", "248"], ["8.6.13", "Rechnungsbeleg anzeigen", "253"], ["9", "Werteflüsse innerhalb der Kostenstellenrechnung", "257"], ["9.1", "Manuelle Kostenumbuchung", "257"], ["9.1.1", "Allgemeines", "257"], ["9.1.2", "Manuelle Umbuchung durchführen", "258"], ["9.2", "Einzelpostenumbuchung", "263"], ["9.2.1", "Allgemeines", "263"], ["9.2.2", "Einzelpostenumbuchung durchführen", "264"], ["9.3", "Manuelle Kostenverrechnung", "267"], ["9.3.1", "Allgemeines", "267"], ["9.3.2", "Manuelle Verrechnung durchführen", "268"], ["9.4", "Periodenabschluss", "272"], ["9.4.1", "Zyklus-Segment-Technik", "272"], ["9.4.2", "Periodische Umbuchung", "273"], ["9.4.3", "Verteilung", "299"], ["9.4.4", "Fiori App „Verrechnungen verwalten“", "325"], ["9.4.5", "Fiori App „Verrechnungen ausführen“", "338"], ["10", "Berichtswesen", "347"], ["10.1", "Allgemeines", "347"], ["10.2", "Vom Summenbericht zum Ursprungsbeleg", "348"], ["10.3", "Variationsfunktion", "353"], ["10.4", "Berichtsoptionen", "356"], ["10.5", "Benutzereinstellungen", "359"], ["10.6", "Weitere Standardberichte", "362"]];
 const SKEY='sapcp-skript-text';
-let sq='';
-function skriptPages(){try{const t=localStorage.getItem(SKEY);return t?t.split('\f'):null;}catch(e){return null;}}
+let sq='',SK={pages:null,pdf:null,doc:null,ready:false,msg:''};
+// IndexedDB: das Skript bleibt nur in diesem Browser
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('sapcp-skript',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbGet(k){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error);});}
+async function idbSet(k,v){const d=await idb();return new Promise((res,rej)=>{const tx=d.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}
+async function idbDel(k){const d=await idb();return new Promise(res=>{const tx=d.transaction('kv','readwrite');tx.objectStore('kv').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();});}
+let PDFJS=null;
+async function pdfjs(){if(!PDFJS){PDFJS=await import('./pdfjs/pdf.min.mjs');PDFJS.GlobalWorkerOptions.workerSrc='./pdfjs/pdf.worker.min.mjs';}return PDFJS;}
+async function skriptInit(){
+ try{const pg=await idbGet('pages');if(pg)SK.pages=pg;const pdf=await idbGet('pdf');if(pdf)SK.pdf=pdf;}catch(e){}
+ if(!SK.pages){try{const t=localStorage.getItem(SKEY);if(t)SK.pages=t.split('\f');}catch(e){}}
+ SK.ready=true;if(view==='search')renderSearch();}
+async function getDoc(){if(SK.doc)return SK.doc;if(!SK.pdf)return null;const lib=await pdfjs();SK.doc=await lib.getDocument({data:new Uint8Array(SK.pdf.slice(0))}).promise;return SK.doc;}
+async function loadPdfFile(f){
+ const st=$('#sstat');const say=t=>{SK.msg=t;if(st)st.innerHTML=t;};
+ say('Skript wird gelesen …');
+ const buf=await f.arrayBuffer();SK.pdf=buf;SK.doc=null;
+ const doc=await getDoc();const pages=[];
+ for(let i=1;i<=doc.numPages;i++){const p=await doc.getPage(i);const tc=await p.getTextContent();pages.push(tc.items.map(x=>x.str+(x.hasEOL?'\n':' ')).join(''));if(i%20===0)say(`Text wird gelesen: Seite ${i} von ${doc.numPages} …`);}
+ SK.pages=pages;
+ try{await idbSet('pdf',buf);await idbSet('pages',pages);say(`Skript geladen: ${pages.length} Seiten, nur in diesem Browser gespeichert.`);}catch(e){say('Skript geladen, aber der Browser erlaubt kein dauerhaftes Speichern (z. B. privates Fenster). Nach dem Schliessen musst du es neu laden.');}
+ try{localStorage.removeItem(SKEY);}catch(e){}
+ renderSearch();}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss');}
-function terms(){return norm(sq).split(/\s+/).filter(w=>w.length>0);}
-function matchAll(text,ts){const n=norm(text);return ts.every(w=>n.includes(w));}
-function hl(text,ts){let h=esc(text);ts.forEach(w=>{if(w.length<2)return;const re=new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');h=h.replace(re,'<mark>$1</mark>');});return h;}
-function snippet(page,ts){const n=norm(page);let i=n.indexOf(ts[0]);if(i<0)i=0;const a=Math.max(0,i-160),b=Math.min(page.length,i+260);return (a>0?'… ':'')+page.slice(a,b).replace(/\s+/g,' ')+(b<page.length?' …':'');}
+function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ß/g,'ss');}
+const STOP=new Set('der die das den dem des ein eine einer eines einem einen und oder aber was wer wie wo wann warum welche welcher welches welchen welchem ist sind war waren wird werden wurde kann koennen muss muessen soll sollen darf bei mit von vom zu zur zum im in an am auf aus fuer ueber unter nach vor durch ich du er sie es wir ihr man mein dein sein nicht kein keine auch noch nur schon so dann denn wenn dass als bzw z b etc gibt gilt hat haben macht mache machen tun tue finde findet steht stehen heisst bedeutet'.split(' '));
+function terms(){return [...new Set(norm(sq).replace(/[^a-z0-9#_./+\- ]/g,' ').split(/\s+/).map(w=>w.replace(/^[.\-/]+|[.\-/]+$/g,'')).filter(w=>w.length>1&&!STOP.has(w)))];}
+function stem(w){return w.length>=7?w.slice(0,w.length-2):w.length>=5?w.slice(0,w.length-1):w;}
+function score(text,ts){const n=norm(text);let s=0,c=0;ts.forEach(w=>{const st=stem(w);if(n.includes(st)){s++;c+=Math.min(5,n.split(st).length-1);}});return s*10+c;}
+function need(ts){return ts.length<=2?ts.length:Math.ceil(ts.length*0.6);}
+function hits(text,ts){const n=norm(text);return ts.filter(w=>n.includes(stem(w))).length;}
+function hl(text,ts){let h=esc(text);ts.forEach(w=>{const st=stem(w);if(st.length<2)return;const re=new RegExp('('+st.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[\\wäöüÄÖÜß]*)','gi');h=h.replace(re,'<mark>$1</mark>');});return h;}
+function snippet(page,ts){const n=norm(page);let i=-1;for(const w of ts){i=n.indexOf(stem(w));if(i>=0)break;}if(i<0)i=0;const a=Math.max(0,i-160),b=Math.min(page.length,i+260);return (a>0?'… ':'')+page.slice(a,b).replace(/\s+/g,' ')+(b<page.length?' …':'');}
+// "S. 84" oder "Seite 84" in Antworten anklickbar machen
+function pageLinks(html){return html.replace(/((?:Skript )?(?:S\.|Seite)\s?)(\d{1,3})(?:\s?[–-]\s?(\d{1,3}))?/g,(m,pre,a,b)=>`${pre}<a href="#" class="pl" data-p="${a}">${a}</a>`+(b?`–<a href="#" class="pl" data-p="${b}">${b}</a>`:''));}
+document.addEventListener('click',e=>{const a=e.target.closest('.pl');if(a){e.preventDefault();openPage(+a.dataset.p);}});
 function renderSearch(){
- const pages=skriptPages();
- app.innerHTML=`<div class="card"><b>Suche</b><p class="muted">Mehrere Stichworte = alle müssen vorkommen. Gross-/Kleinschreibung egal, «ss» findet auch «ß».</p>
- <input type="search" id="sq" placeholder="z. B. Mussfeld Kostenstelle, KSW5, Feldstatusgruppe" value="${esc(sq)}">
- <div class="muted" style="margin-top:8px">${pages?`Skript-Text geladen (${pages.length} Seiten), nur in diesem Browser gespeichert. <button class="btn sec" id="sdel" style="padding:4px 10px;font-size:13px">Entfernen</button>`:`Skript-Text noch nicht geladen. Wähle einmal die Datei <b>Skript_Suchtext.txt</b> aus deinem SAP-Ordner; sie bleibt nur in diesem Browser.`}</div>
- <div class="row"><label class="btn sec" style="cursor:pointer">Skript-Datei laden<input type="file" id="sf" accept=".txt,text/plain" style="display:none"></label></div></div>
+ const pages=SK.pages,hasPdf=!!SK.pdf;
+ app.innerHTML=`<div class="card"><b>Suche</b><p class="muted">Tippe Stichworte oder eine ganze Frage. Füllwörter werden ignoriert, Wortanfänge zählen («Mussfelder» findet auch «Mussfeld»). Die besten Treffer stehen oben.</p>
+ <input type="search" id="sq" placeholder="z. B. Was sind Mussfelder bei der Kostenstelle?" value="${esc(sq)}">
+ <div class="muted" id="sstat" style="margin-top:8px">${SK.msg||(!SK.ready?'Skript wird geprüft …':hasPdf?`Skript geladen (${pages?pages.length:'?'} Seiten), nur in diesem Browser gespeichert. Bei jedem Treffer kannst du die Seite ansehen.`:pages?'Nur der Suchtext ist geladen. Lade das PDF, dann kannst du die Seiten auch ansehen.':'Skript noch nicht geladen. Wähle einmal die Datei <b>SAP Skript_durchsuchbar.pdf</b> aus deinem SAP-Ordner. Sie bleibt nur in diesem Browser.')}</div>
+ <div class="row"><label class="btn sec" style="cursor:pointer">Skript laden (PDF)<input type="file" id="sf" accept=".pdf,application/pdf,.txt,text/plain" style="display:none"></label>${hasPdf?'<button class="btn sec" id="sview">Skript öffnen</button>':''}${pages?'<button class="btn sec" id="sdel">Aus dem Browser entfernen</button>':''}</div></div>
  <div id="sres"></div>`;
  const inp=$('#sq');inp.oninput=e=>{sq=e.target.value;runSearch();};inp.focus();inp.setSelectionRange(sq.length,sq.length);
- $('#sf').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let t=String(r.result);if(t.indexOf('\f')<0){$('#sres').innerHTML='<div class="card">Diese Datei hat keine Seitenumbrüche. Bitte Skript_Suchtext.txt wählen.</div>';return;}try{localStorage.setItem(SKEY,t);}catch(err){$('#sres').innerHTML='<div class="card">Speichern im Browser nicht möglich (Speicher voll oder privates Fenster).</div>';return;}renderSearch();};r.readAsText(f,'utf-8');};
- if($('#sdel'))$('#sdel').onclick=()=>{try{localStorage.removeItem(SKEY);}catch(e){}renderSearch();};
+ $('#sf').onchange=e=>{const f=e.target.files[0];if(!f)return;
+  if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){loadPdfFile(f).catch(err=>{SK.msg='Das PDF konnte nicht gelesen werden: '+esc(err.message||err);renderSearch();});return;}
+  const r=new FileReader();r.onload=()=>{const t=String(r.result);if(t.indexOf('\f')<0){SK.msg='Diese Datei hat keine Seitenumbrüche. Bitte das Skript-PDF wählen.';renderSearch();return;}SK.pages=t.split('\f');idbSet('pages',SK.pages).catch(()=>{});SK.msg='';renderSearch();};r.readAsText(f,'utf-8');};
+ if($('#sdel'))$('#sdel').onclick=async()=>{await idbDel('pdf');await idbDel('pages');try{localStorage.removeItem(SKEY);}catch(e){}SK.pages=null;SK.pdf=null;SK.doc=null;SK.msg='';renderSearch();};
+ if($('#sview'))$('#sview').onclick=()=>openPage(1);
  runSearch();}
 function runSearch(){
  const ts=terms(),box=$('#sres');if(!box)return;
  if(!ts.length){box.innerHTML='';return;}
- const qs=DATA.questions.filter(x=>matchAll(x.q+' '+x.a+' '+x.o.map(o=>o.t).join(' '),ts));
- const cs=CODES.filter(x=>matchAll(x.c+' '+x.f+' '+(x.app||''),ts));
- const tc=TOC.filter(x=>matchAll(x[0]+' '+x[1],ts));
- const pages=skriptPages();let sp=[];
- if(pages)pages.forEach((p,i)=>{if(matchAll(p,ts))sp.push(i+1);});
- let h='';
- h+=`<div class="card"><b>Skript-Inhaltsverzeichnis (${tc.length})</b>`+(tc.length?tc.slice(0,30).map(x=>`<div class="hit">Kap. ${esc(x[0])} ${hl(x[1],ts)} · <b>S. ${esc(x[2])}</b></div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
- if(pages)h+=`<div class="card"><b>Skript-Text: ${sp.length} Seite(n)</b>`+(sp.length?sp.slice(0,40).map(n=>`<div class="hit"><b>S. ${n}</b><br>${hl(snippet(pages[n-1],ts),ts)}</div>`).join('')+(sp.length>40?'<div class="muted">… weitere Seiten: '+sp.slice(40).join(', ')+'</div>':''):'<div class="muted">kein Treffer</div>')+`</div>`;
- h+=`<div class="card"><b>Fragen (${qs.length})</b>`+(qs.length?qs.slice(0,40).map(x=>`<div class="hit"><span class="tag">${x.id}</span>${smTag(x)}<b>${hl(x.q,ts)}</b><br>${hl(x.a,ts)}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
- h+=`<div class="card"><b>Karteikarten (${cs.length})</b>`+(cs.length?cs.map(x=>`<div class="hit"><b>${hl(x.c,ts)}</b>: ${hl(x.f,ts)} <span class="muted">(${x.s==='allgemein'?'nicht im Skript':'Skript '+esc(x.s)})</span></div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ const nd=need(ts),rank=(arr,f)=>arr.map(x=>({x,h:hits(f(x),ts),s:score(f(x),ts)})).filter(r=>r.h>=nd).sort((a,b)=>b.s-a.s);
+ const qs=rank(DATA.questions,x=>x.q+' '+x.a+' '+x.o.map(o=>o.t).join(' '));
+ const cs=rank(CODES,x=>x.c+' '+x.f+' '+(x.app||''));
+ const tc=rank(TOC,x=>x[0]+' '+x[1]);
+ const pages=SK.pages;let sp=[];
+ if(pages)sp=pages.map((p,i)=>({n:i+1,h:hits(p,ts),s:score(p,ts)})).filter(r=>r.h>=nd).sort((a,b)=>b.s-a.s);
+ const btn=n=>SK.pdf?` <button class="btn sec" style="padding:3px 10px;font-size:13px" onclick="openPage(${n})">Seite ansehen</button>`:'';
+ let h=`<div class="muted" style="margin:0 0 8px">Gesucht nach: ${ts.map(esc).join(', ')}${ts.length>2?` (mindestens ${nd} davon müssen vorkommen)`:''}</div>`;
+ if(pages)h+=`<div class="card"><b>Skript: ${sp.length} Seite(n)</b>`+(sp.length?sp.slice(0,30).map(r=>`<div class="hit"><b>S. ${r.n}</b>${btn(r.n)}<br>${hl(snippet(pages[r.n-1],ts),ts)}</div>`).join('')+(sp.length>30?'<div class="muted">… weitere Seiten: '+sp.slice(30).map(r=>r.n).sort((a,b)=>a-b).join(', ')+'</div>':''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ h+=`<div class="card"><b>Skript-Inhaltsverzeichnis (${tc.length})</b>`+(tc.length?tc.slice(0,20).map(r=>`<div class="hit">Kap. ${esc(r.x[0])} ${hl(r.x[1],ts)} · <b>S. ${esc(r.x[2])}</b>${btn(+r.x[2])}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ h+=`<div class="card"><b>Fragen (${qs.length})</b>`+(qs.length?qs.slice(0,30).map(r=>`<div class="hit"><span class="tag">${r.x.id}</span>${smTag(r.x)}<b>${hl(r.x.q,ts)}</b><br>${pageLinks(hl(r.x.a,ts))}</div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ h+=`<div class="card"><b>Karteikarten (${cs.length})</b>`+(cs.length?cs.slice(0,30).map(r=>`<div class="hit"><b>${hl(r.x.c,ts)}</b>: ${hl(r.x.f,ts)} <span class="muted">(${r.x.s==='allgemein'?'nicht im Skript':'Skript '+pageLinks(esc(r.x.s))})</span></div>`).join(''):'<div class="muted">kein Treffer</div>')+`</div>`;
+ if(!pages)h+=`<div class="card muted">Tipp: Lade das Skript-PDF oben, dann durchsucht die App auch alle Skript-Seiten.</div>`;
  box.innerHTML=h;}
+// Seitenansicht
+let PV={n:1,z:1};
+async function openPage(n){
+ let ov=$('#pv');if(!ov){ov=document.createElement('div');ov.id='pv';document.body.appendChild(ov);}
+ if(!SK.pdf){ov.innerHTML=`<div class="pvbar"><b>Skript</b><span style="flex:1"></span><button class="btn sec" id="pvx">Schliessen</button></div><div class="card" style="margin:16px">Das Skript ist in diesem Browser noch nicht geladen. Öffne den Reiter <b>Suche</b> und lade dort einmal die Datei <b>SAP Skript_durchsuchbar.pdf</b>.</div>`;$('#pvx').onclick=()=>ov.remove();return;}
+ PV.n=n;ov.innerHTML=`<div class="pvbar"><button class="btn sec" id="pvp">◀</button><input id="pvn" type="number" min="1" style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)"><span id="pvt" class="muted"></span><button class="btn sec" id="pvnx">▶</button><button class="btn sec" id="pvzm">−</button><button class="btn sec" id="pvzp">+</button><span style="flex:1"></span><button class="btn" id="pvx">Schliessen</button></div><div id="pvc"><canvas id="pvcv"></canvas></div>`;
+ $('#pvx').onclick=()=>ov.remove();$('#pvp').onclick=()=>showPage(PV.n-1);$('#pvnx').onclick=()=>showPage(PV.n+1);
+ $('#pvzm').onclick=()=>{PV.z=Math.max(0.6,PV.z-0.25);showPage(PV.n);};$('#pvzp').onclick=()=>{PV.z=Math.min(3,PV.z+0.25);showPage(PV.n);};
+ $('#pvn').onchange=e=>showPage(+e.target.value);
+ showPage(n);}
+async function showPage(n){
+ const doc=await getDoc();if(!doc)return;n=Math.min(doc.numPages,Math.max(1,n||1));PV.n=n;
+ $('#pvn').value=n;$('#pvt').textContent='von '+doc.numPages;
+ const pg=await doc.getPage(n),wrap=$('#pvc'),cv=$('#pvcv');
+ const base=pg.getViewport({scale:1}),w=Math.min(wrap.clientWidth-16,900)*PV.z,sc=w/base.width,dpr=window.devicePixelRatio||1;
+ const vp=pg.getViewport({scale:sc*dpr});cv.width=vp.width;cv.height=vp.height;cv.style.width=(vp.width/dpr)+'px';cv.style.height=(vp.height/dpr)+'px';
+ if(PV.task)try{PV.task.cancel();}catch(e){}
+ PV.task=pg.render({canvasContext:cv.getContext('2d'),viewport:vp});try{await PV.task.promise;}catch(e){}
+ wrap.scrollTop=0;}
+document.addEventListener('keydown',e=>{if(!$('#pv'))return;if(e.key==='Escape')$('#pv').remove();if(e.key==='ArrowRight'&&e.target.tagName!=='INPUT')showPage(PV.n+1);if(e.key==='ArrowLeft'&&e.target.tagName!=='INPUT')showPage(PV.n-1);});
 // ---- Fortschritt ----
 function renderStats(){
  const rows=Object.keys(DATA.parts).map(p=>{const ids=DATA.questions.filter(x=>x.p===p).map(x=>x.id);const c=counts('q',ids);return `<tr><td>${p} · ${DATA.parts[p]}</td><td>${ids.length}</td><td>${c[3]}</td><td>${c[2]}</td><td>${c[1]}</td><td>${c[0]}</td></tr>`;}).join('');
@@ -232,6 +294,7 @@ function renderStats(){
  $('#rs').onclick=()=>$('#rsq').classList.remove('hide');
  $('#rsy').onclick=()=>{S={q:{},c:{},exams:[]};save();renderStats();};}
 show('start');
+skriptInit();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 </script>
 </body>
