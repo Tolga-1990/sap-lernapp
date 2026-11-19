@@ -4,9 +4,10 @@ Lern-App für die Prüfung SAP Competence Pass, Teil CT (Controlling Tasks), bei
 
 ## Funktionen
 
-- **Quiz** mit 148 Multiple-Choice-Fragen (79 mit einer, 69 mit mehreren richtigen Antworten), davon 12 zu den Kursaufgaben 1–7 vom 19.11. (Teil K), automatisch ausgewertet, mit Musterantwort und Skript-Kapitel; falsch beantwortete Fragen kommen öfter
+- **Quiz** mit 178 Multiple-Choice-Fragen (94 mit einer, 84 mit mehreren richtigen Antworten), davon 12 zu den Kursaufgaben 1–7 (Teil K) und 30 zu Kurs-Mitschnitt und Skript-Fallstudie Aufgaben 8–20 (Teil L); 22 Fragen sind als «laut Trainer prüfungsrelevant» (blaue Smileys auf seinen Folien) markiert und separat übbar; automatisch ausgewertet, mit Musterantwort und Skript-Kapitel bzw. -Seite; falsch beantwortete Fragen kommen öfter
 - **Karteikarten** mit 54 Transaktionscodes und Befehlen (neu SU3 und KA01 aus dem Kurs) sowie 14 Tastaturkürzeln, in beide Richtungen
 - **Prüfungssimulation**: 40 zufällige Multiple-Choice-Fragen in 60 Minuten, Ergebnis erst am Ende in Prozent (bestanden ab 60 %, Auszeichnung ab 80 %); eine Frage zählt nur, wenn alle richtigen und keine falschen Antworten angekreuzt sind
+- **Suche** nach Stichworten in Fragen, Karteikarten und Skript-Inhaltsverzeichnis; der Skript-Volltext lässt sich lokal laden (Datei Skript_Suchtext.txt) und bleibt nur im eigenen Browser, er liegt nicht in diesem Repository
 - **Fortschritt** wird nur im eigenen Browser gespeichert (localStorage), nichts wird ins Internet übertragen
 
 ## Quelle der Inhalte
