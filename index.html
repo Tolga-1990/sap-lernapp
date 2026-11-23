@@ -267,6 +267,12 @@ const QUELLEN=[
 "u": "https://help.sap.com/saphelp_46c/helpdata/en/85/daecb24bac11d1890e0000e8322f96/content.htm",
 "u2": "https://help.sap.com/saphelp_46c/helpdata/en/85/daf6d14bac11d1890e0000e8322f96/content.htm",
 "b": "Die Statusleiste unten im Fenster zeigt Meldungen und Statusinformationen; Meldungstypen S (Erfolg), I (Information), W (Warnung), E (Fehler), A (Abbruch)"
+},
+{
+"id": "Q28",
+"t": "Kursskript SAPCOK CP S/4HANA Skriptum CT v1.0 CH (biz:Consult/Digicomp, SAP-Partner)",
+"u": "",
+"b": "Offizielle Kursquelle (entschieden 23.11.2026). Seitenangaben «S. …» in App und Dokumenten beziehen sich auf dieses Skript. Nicht im öffentlichen Repo enthalten."
 }
 ];
 const KEY='sapcp-lernapp-v1';
@@ -588,8 +594,8 @@ function renderAnl(){const T=ANT[anLang],L=anLang,P=x=>pageLinks(esc(x));
 function openQuelle(id){fromSearch=view==='search';show('quellen');setTimeout(()=>{const d=document.getElementById('q_'+id);if(!d)return;const head=document.querySelector('header');const off=(head&&getComputedStyle(head).position==='sticky')?head.offsetHeight+8:8;window.scrollTo(0,d.getBoundingClientRect().top+window.scrollY-off);d.classList.add('flash');setTimeout(()=>d.classList.remove('flash'),1600);},60);}
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a.ql');if(!a)return;e.preventDefault();openQuelle(a.dataset.q);});
 function renderQuellen(){const L=u=>u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,'').slice(0,70))}${u.length>78?'…':''}</a>`:'';
- app.innerHTML=backBtn()+`<div class="card"><b>Offizielle SAP-Quellen</b><p class="muted">Jede Angabe in der App trägt ihre Quelle. «S. 84» = Seite im Kursskript (anklickbar). «Q1» bis «Q${QUELLEN.length}» = offizielle SAP-Quelle aus dieser Liste (anklickbar). SAP Learning, SAP Help, SAP-Hinweise (KBA = Knowledge Base Article), SAP Fiori Apps Reference Library und das SAP-Übungsheft F2121 stammen von SAP selbst.</p>
- <p class="hint"><b>Was nicht von SAP selbst stammt:</b> das Kursskript «SAPCOK CP S/4HANA Skriptum CT v1.0 CH» (biz:Consult/Digicomp, SAP-Partner; offener Punkt: ob es als offizielle Quelle gilt, entscheidest du), Aussagen des Trainers im Kurs (gekennzeichnet «Trainer» oder «Kurs 19.11./20.11.») und meine Rechnungen aus Skript-Zahlen (gekennzeichnet «meine Rechnung»). Wo eine Trainer-Aussage keine SAP-Quelle hat, steht nur «Trainer».</p></div>`+
+ app.innerHTML=backBtn()+`<div class="card"><b>Offizielle SAP-Quellen</b><p class="muted">Jede Angabe in der App trägt ihre Quelle. «S. 84» = Seite im Kursskript (anklickbar). «Q1» bis «Q${QUELLEN.length}» = offizielle Quelle aus dieser Liste (anklickbar; Q28 = Kursskript). SAP Learning, SAP Help, SAP-Hinweise (KBA = Knowledge Base Article), SAP Fiori Apps Reference Library und das SAP-Übungsheft F2121 stammen von SAP selbst.</p>
+ <p class="hint"><b>Kursskript:</b> «SAPCOK CP S/4HANA Skriptum CT v1.0 CH» (biz:Consult/Digicomp, SAP-Partner) gilt als offizielle Kursquelle (Q28, entschieden 23.11.2026); Seitenangaben «S. …» beziehen sich darauf. <b>Was nicht offiziell belegt ist:</b> Aussagen des Trainers im Kurs (gekennzeichnet «Trainer» oder «Kurs 19.11./20.11.») und meine Rechnungen aus Skript-Zahlen (gekennzeichnet «meine Rechnung»). Wo eine Trainer-Aussage keine SAP-Quelle hat, steht nur «Trainer».</p></div>`+
  QUELLEN.map(q=>`<details class="card tf" id="q_${q.id}" open><summary><span class="tag">${q.id}</span> <b>${esc(q.t)}</b></summary><div class="a">${esc(q.b)}</div><div class="muted">${[q.u,q.u2].concat(q.more||[]).filter(Boolean).map(L).join('<br>')||'Datei in deinem Ordner (nicht öffentlich verlinkt)'}</div></details>`).join('');}
 function renderStats(){
  const rows=Object.keys(DATA.parts).map(p=>{const ids=DATA.questions.filter(x=>x.p===p).map(x=>x.id);const c=counts('q',ids);return `<tr><td>${p} · ${DATA.parts[p]}</td><td>${ids.length}</td><td>${c[3]}</td><td>${c[2]}</td><td>${c[1]}</td><td>${c[0]}</td></tr>`;}).join('');
